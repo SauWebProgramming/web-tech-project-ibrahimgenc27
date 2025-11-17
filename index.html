@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAÜFLIX</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="icon" type="image/png" href="images/logo.png">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="logo-container">
+                <h1 class="netflix-style">SAÜFLIX</h1>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="#" class="active" id="home-link">Ana Sayfa</a></li>
+                    <li><a href="#" id="favorites-link">Favorilerim</a></li>
+                    <li><a href="#" id="feedback-link">Geri Bildirim</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section class="search-section">
+            <div class="container">
+                <div class="search-container">
+                    <input type="text" id="search-input" placeholder="Film adı ara...">
+                    <select id="category-filter">
+                        <option value="">Tüm Kategoriler</option>
+                        <option value="Aksiyon">Aksiyon</option>
+                        <option value="Komedi">Komedi</option>
+                        <option value="Dram">Dram</option>
+                        <option value="Bilim Kurgu">Bilim Kurgu</option>
+                        <option value="Korku">Korku</option>
+                    </select>
+                    <select id="year-filter">
+                        <option value="">Tüm Yıllar</option>
+                    </select>
+                    <button id="search-button"><i class="fas fa-search"></i> Ara</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="content-section" class="content-section">
+            <div class="container">
+                <div id="movies-grid" class="movies-grid">
+                    </div>
+            </div>
+        </section>
+
+        <section id="movie-details" class="movie-details hidden">
+            <div class="container">
+                <button id="back-button" class="back-button"><i class="fas fa-arrow-left"></i> Geri</button>
+                <div id="detail-content" class="detail-content">
+                    </div>
+            </div>
+        </section>
+
+        <section id="favorites-section" class="favorites-section hidden">
+            <div class="container">
+                <h2>Favorilerim</h2>
+                <div id="favorites-grid" class="movies-grid">
+                    </div>
+            </div>
+        </section>
+
+        <section id="feedback-section" class="feedback-section hidden">
+            <div class="container">
+                <h2>Geri Bildirim</h2>
+                <p>Görüşlerini bizimle paylaş. Formu eksiksiz doldurmalısın.</p>
+                <form id="feedback-form" novalidate>
+                    <div class="form-group">
+                        <label for="fb-name">Ad Soyad</label>
+                        <input type="text" id="fb-name" name="name" placeholder="Ad Soyad" required pattern="[A-Za-zÇçĞğİıÖöŞşÜü\s]{2,}" />
+                        <small class="error" id="fb-name-error"></small>
+                    </div>
+                    <div class="form-group">
+                        <label for="fb-email">E-posta</label>
+                        <input type="email" id="fb-email" name="email" placeholder="ornek@domain.com" required />
+                        <small class="error" id="fb-email-error"></small>
+                    </div>
+                    <div class="form-group">
+                        <label for="fb-topic">Konu</label>
+                        <select id="fb-topic" name="topic" required>
+                            <option value="">Seçiniz</option>
+                            <option value="genel">Genel Görüş</option>
+                            <option value="hata">Hata Bildirimi</option>
+                            <option value="oneri">Öneri</option>
+                        </select>
+                        <small class="error" id="fb-topic-error"></small>
+                    </div>
+                    <div class="form-group">
+                        <label for="fb-message">Mesaj</label>
+                        <textarea id="fb-message" name="message" placeholder="Mesajınızı yazın" required minlength="10" rows="5"></textarea>
+                        <small class="error" id="fb-message-error"></small>
+                    </div>
+                    <button type="submit" class="btn">Gönder</button>
+                    <p id="feedback-status" class="status" aria-live="polite"></p>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 Film Kütüphanesi - ISE-201 Web Teknolojileri Ödevi</p>
+        </div>
+    </footer>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
