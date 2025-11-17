@@ -387,6 +387,7 @@ const showHomePage = () => {
     contentSection.classList.remove('hidden');
     movieDetails.classList.add('hidden');
     favoritesSection.classList.add('hidden');
+    feedbackSection.classList.add('hidden');
     currentView = 'home';
     updateActiveNavLink();
     currentPage = 1;
@@ -399,6 +400,7 @@ const showFavoritesPage = () => {
     contentSection.classList.add('hidden');
     movieDetails.classList.add('hidden');
     favoritesSection.classList.remove('hidden');
+    feedbackSection.classList.add('hidden');
     currentView = 'favorites';
     renderFavorites();
     updateActiveNavLink();
@@ -513,6 +515,12 @@ const setupFeedbackForm = () => {
     const emailError = document.getElementById('fb-email-error');
     const topicError = document.getElementById('fb-topic-error');
     const messageError = document.getElementById('fb-message-error');
+    const ratingInputs = Array.from(document.querySelectorAll('input[name="rating"]'));
+    const ratingError = document.getElementById('fb-rating-error');
+    const messageCount = document.getElementById('fb-message-count');
+    const feedbackList = document.getElementById('feedback-list');
+    const feedbackClearBtn = document.getElementById('feedback-clear');
+    let feedbacks = JSON.parse(localStorage.getItem('feedbacks') || '[]');
 
     const validateName = () => {
         const pattern = /^[A-Za-zÇçĞğİıÖöŞşÜü\s]{2,}$/;
@@ -570,6 +578,71 @@ const setupFeedbackForm = () => {
             }
         });
     });
+    // Mesaj karakter sayacı
+    const updateMessageCount = () => {
+        const len = messageInput.value.trim().length;
+        if (messageCount) messageCount.textContent = `${len} / min 10`;
+    };
+    messageInput.addEventListener('input', updateMessageCount);
+    updateMessageCount();
+
+    // Rating doğrulama ve yıldız görselleştirme
+    const validateRating = () => {
+        const selected = ratingInputs.find(r => r.checked);
+        if (!selected) {
+            if (ratingError) ratingError.textContent = 'Bir memnuniyet puanı seçin.';
+            return false;
+        }
+        if (ratingError) ratingError.textContent = '';
+        return true;
+    };
+    const updateStars = () => {
+        const selectedVal = (ratingInputs.find(r => r.checked)?.value) || '0';
+        const valNum = parseInt(selectedVal, 10);
+        document.querySelectorAll('#fb-rating label').forEach((lbl, idx) => {
+            lbl.classList.toggle('active', idx < valNum);
+        });
+    };
+    ratingInputs.forEach(r => r.addEventListener('change', () => { validateRating(); updateStars(); }));
+    updateStars();
+
+    // Gönderi listesini render et
+    const renderFeedbacks = () => {
+        if (!feedbackList) return;
+        feedbackList.innerHTML = '';
+        if (!Array.isArray(feedbacks) || feedbacks.length === 0) {
+            feedbackList.innerHTML = '<p class="no-results">Henüz gönderi yok.</p>';
+            return;
+        }
+        feedbacks.slice().reverse().forEach((fb, idx) => {
+            const item = document.createElement('div');
+            item.className = 'feedback-item';
+            item.innerHTML = `
+                <div class="meta">${fb.name} • ${fb.email} • ${fb.topic} • ⭐ ${fb.rating} • ${new Date(fb.createdAt || fb.date).toLocaleString('tr-TR')}</div>
+                <p>${fb.message}</p>
+                <button class="btn btn-sm" data-index="${feedbacks.length - 1 - idx}">Sil</button>
+            `;
+            feedbackList.appendChild(item);
+        });
+        feedbackList.querySelectorAll('button[data-index]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const i = parseInt(e.target.getAttribute('data-index'), 10);
+                feedbacks.splice(i, 1);
+                localStorage.setItem('feedbacks', JSON.stringify(feedbacks));
+                renderFeedbacks();
+            });
+        });
+    };
+    renderFeedbacks();
+
+    if (feedbackClearBtn) {
+        feedbackClearBtn.addEventListener('click', () => {
+            feedbacks = [];
+            localStorage.setItem('feedbacks', JSON.stringify(feedbacks));
+            renderFeedbacks();
+            feedbackStatus.textContent = 'Tüm gönderiler temizlendi.';
+        });
+    }
 
     feedbackForm.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -577,8 +650,9 @@ const setupFeedbackForm = () => {
         const v2 = validateEmail();
         const v3 = validateTopic();
         const v4 = validateMessage();
-        if (!(v1 && v2 && v3 && v4)) {
-            feedbackStatus.textContent = '';
+        const v5 = validateRating();
+        if (!(v1 && v2 && v3 && v4 && v5)) {
+            feedbackStatus.textContent = 'Lütfen hataları düzeltin ve tekrar deneyin.';
             return;
         }
 
@@ -587,15 +661,17 @@ const setupFeedbackForm = () => {
             email: emailInput.value.trim(),
             topic: topicSelect.value,
             message: messageInput.value.trim(),
+            rating: parseInt(ratingInputs.find(r => r.checked)?.value || '0', 10),
             createdAt: new Date().toISOString(),
         };
 
-        const existing = JSON.parse(localStorage.getItem('feedbacks') || '[]');
-        existing.push(payload);
-        localStorage.setItem('feedbacks', JSON.stringify(existing));
-
+        feedbacks.push(payload);
+        localStorage.setItem('feedbacks', JSON.stringify(feedbacks));
         feedbackStatus.textContent = 'Gönderildi! Görüşünüz için teşekkürler.';
         feedbackForm.reset();
+        updateMessageCount();
+        updateStars();
+        renderFeedbacks();
     });
 };
 // Geri Bildirim Sayfasını Göster
