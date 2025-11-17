@@ -137,6 +137,18 @@ nav ul li a:hover, nav ul li a.active {
     margin-bottom: 2rem;
 }
 
+/* Sayfalama */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin: 1rem 0 2rem;
+}
+.page-info {
+    color: var(--light-color);
+}
+
 .movie-card {
     background-color: var(--secondary-color);
     border-radius: 8px;

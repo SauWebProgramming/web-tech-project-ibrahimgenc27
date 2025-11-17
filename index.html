@@ -41,6 +41,21 @@
                     <select id="year-filter">
                         <option value="">Tüm Yıllar</option>
                     </select>
+                    <select id="sort-select" aria-label="Sırala">
+                        <option value="">Sıralama (varsayılan)</option>
+                        <option value="title-asc">Ada göre A→Z</option>
+                        <option value="title-desc">Ada göre Z→A</option>
+                        <option value="year-desc">Yıl yeni→eski</option>
+                        <option value="year-asc">Yıl eski→yeni</option>
+                        <option value="rating-desc">Puan yüksek→düşük</option>
+                        <option value="rating-asc">Puan düşük→yüksek</option>
+                    </select>
+                    <select id="page-size" aria-label="Sayfa başına">
+                        <option value="8">Sayfa başına 8</option>
+                        <option value="12" selected>Sayfa başına 12</option>
+                        <option value="16">Sayfa başına 16</option>
+                        <option value="24">Sayfa başına 24</option>
+                    </select>
                     <button id="search-button"><i class="fas fa-search"></i> Ara</button>
                 </div>
             </div>
@@ -50,6 +65,11 @@
             <div class="container">
                 <div id="movies-grid" class="movies-grid">
                     </div>
+                <div id="pagination" class="pagination" aria-label="Sayfalama">
+                    <button id="prev-page" class="btn" disabled>Önceki</button>
+                    <span id="page-info" class="page-info">1 / 1</span>
+                    <button id="next-page" class="btn" disabled>Sonraki</button>
+                </div>
             </div>
         </section>
 

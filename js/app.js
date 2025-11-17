@@ -5,6 +5,12 @@ const searchInput = document.getElementById('search-input');
 const categoryFilter = document.getElementById('category-filter');
 const yearFilter = document.getElementById('year-filter');
 const searchButton = document.getElementById('search-button');
+const sortSelect = document.getElementById('sort-select');
+const pageSizeSelect = document.getElementById('page-size');
+const paginationEl = document.getElementById('pagination');
+const prevPageBtn = document.getElementById('prev-page');
+const nextPageBtn = document.getElementById('next-page');
+const pageInfoEl = document.getElementById('page-info');
 const contentSection = document.getElementById('content-section');
 const movieDetails = document.getElementById('movie-details');
 const detailContent = document.getElementById('detail-content');
@@ -24,6 +30,8 @@ let favorites = JSON.parse(localStorage.getItem('favorites')) || [];
 let filteredMovies = [];
 let currentView = 'home'; // 'home', 'details', 'favorites'
 // 'feedback' görünümü eklendi
+let currentPage = 1;
+let pageSize = 12;
 
 // Sayfa Yüklendiğinde
 document.addEventListener('DOMContentLoaded', async () => {
@@ -35,6 +43,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         setupEventListeners();
         handleUrlHash();
         setupFeedbackForm();
+        if (pageSizeSelect) {
+            pageSize = parseInt(pageSizeSelect.value, 10);
+        }
+        // İlk renderi filtre/sıralama/sayfalama ile yap
+        currentPage = 1;
+        filterMovies();
     } catch (error) {
         console.error('Uygulama başlatılırken hata oluştu:', error);
 }
@@ -345,6 +359,8 @@ const filterMovies = () => {
     const searchTerm = searchInput.value.toLowerCase().trim();
     const selectedCategory = categoryFilter.value;
     const selectedYear = yearFilter.value;
+    const sortValue = sortSelect ? sortSelect.value : '';
+    pageSize = pageSizeSelect ? parseInt(pageSizeSelect.value, 10) : pageSize;
     
     filteredMovies = movies.filter(movie => {
         const matchesSearch = movie.title.toLowerCase().includes(searchTerm);
@@ -353,8 +369,16 @@ const filterMovies = () => {
         
         return matchesSearch && matchesCategory && matchesYear;
     });
-    
-    renderMovies(filteredMovies);
+    // Sıralama uygula
+    const sorted = applySort(filteredMovies, sortValue);
+    // Sayfalama uygula
+    const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
+    if (currentPage > totalPages) currentPage = totalPages;
+    const start = (currentPage - 1) * pageSize;
+    const pageItems = sorted.slice(start, start + pageSize);
+    renderMovies(pageItems);
+    updateFavoriteButtons();
+    updatePaginationControls(currentPage, totalPages);
 };
 
 // Ana Sayfayı Göster
@@ -365,6 +389,8 @@ const showHomePage = () => {
     favoritesSection.classList.add('hidden');
     currentView = 'home';
     updateActiveNavLink();
+    currentPage = 1;
+    filterMovies();
 };
 
 // Favoriler Sayfasını Göster
@@ -422,13 +448,28 @@ const handleUrlHash = () => {
 const setupEventListeners = () => {
     // Arama ve filtreleme
     searchButton.addEventListener('click', filterMovies);
+    // Debounce'lu canlı arama
+    const debounce = (fn, delay = 300) => {
+        let t;
+        return (...args) => {
+            clearTimeout(t);
+            t = setTimeout(() => fn(...args), delay);
+        };
+    };
+    const debouncedFilter = debounce(() => { currentPage = 1; filterMovies(); }, 300);
+    searchInput.addEventListener('input', debouncedFilter);
     searchInput.addEventListener('keyup', (e) => {
         if (e.key === 'Enter') {
+            currentPage = 1;
             filterMovies();
         }
     });
     categoryFilter.addEventListener('change', filterMovies);
     yearFilter.addEventListener('change', filterMovies);
+    if (sortSelect) sortSelect.addEventListener('change', () => { currentPage = 1; filterMovies(); });
+    if (pageSizeSelect) pageSizeSelect.addEventListener('change', () => { currentPage = 1; filterMovies(); });
+    if (prevPageBtn) prevPageBtn.addEventListener('click', () => { if (currentPage > 1) { currentPage--; filterMovies(); } });
+    if (nextPageBtn) nextPageBtn.addEventListener('click', () => { currentPage++; filterMovies(); });
     
     // Navigasyon
     homeLink.addEventListener('click', (e) => {
@@ -566,4 +607,33 @@ const showFeedbackPage = () => {
     feedbackSection.classList.remove('hidden');
     currentView = 'feedback';
     updateActiveNavLink();
+};
+
+// Sıralama uygulayıcı
+const applySort = (list, sortValue) => {
+    const arr = [...list];
+    switch (sortValue) {
+        case 'title-asc':
+            return arr.sort((a, b) => a.title.localeCompare(b.title));
+        case 'title-desc':
+            return arr.sort((a, b) => b.title.localeCompare(a.title));
+        case 'year-asc':
+            return arr.sort((a, b) => a.year - b.year);
+        case 'year-desc':
+            return arr.sort((a, b) => b.year - a.year);
+        case 'rating-asc':
+            return arr.sort((a, b) => a.rating - b.rating);
+        case 'rating-desc':
+            return arr.sort((a, b) => b.rating - a.rating);
+        default:
+            return arr;
+    }
+};
+
+// Sayfalama kontrol güncelleme
+const updatePaginationControls = (page, totalPages) => {
+    if (!paginationEl) return;
+    prevPageBtn.disabled = page <= 1;
+    nextPageBtn.disabled = page >= totalPages;
+    pageInfoEl.textContent = `${page} / ${totalPages}`;
 };
