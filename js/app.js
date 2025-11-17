@@ -242,40 +242,30 @@ const showMovieDetails = (movieId) => {
                     <h3>Oyuncular</h3>
                     <div class="cast-list">
                         ${movie.cast.map(actor => {
-                            // Oyuncu fotoğrafını yükleme
-                            let actorFileName = actor.replace(/\s+/g, '_');
-                            
-                            // Özel isim kontrolleri
-                            if (actor === "Samuel L. Jackson") {
-                                actorFileName = "Samuel_L_Jackson";
-                            } else if (actor === "Samuel Jackson") {
-                                actorFileName = "Samuel_L_Jackson";
+                            const slug = actor.toLowerCase().replace(/\./g, '').replace(/\s+/g, '_');
+                            const exceptions = {
+                                'samuel l jackson': 'Samuel_L_Jackson.jpg',
+                                'robert downey jr': 'Robert_Downey_Jr..jpg',
+                                'tj miller': 'T.J._Miller.jpg'
+                            };
+                            const key = actor.toLowerCase().replace(/\./g, '').replace(/\s+/g, ' ').trim();
+                            const candidates = [];
+                            if (exceptions[key]) {
+                                candidates.push(`images/${exceptions[key]}`);
                             }
-                            
-                            // Fotoğraf dosyasının var olup olmadığını kontrol et
-                            let imgSrc = `./images/${actorFileName}.jpg`;
-                            
-                            // UI Avatars için daha iyi bir görsel oluştur
-                            let avatarSrc = 'https://ui-avatars.com/api/?name=' + 
-                                encodeURIComponent(actor) + 
-                                '&background=E50914&color=fff&size=150&bold=true&rounded=true';
-                            
-                            // Hata yakalama ve yedek görsel gösterme
-                            try {
-                                const img = new Image();
-                                img.onerror = function() {
-                                    document.getElementById(`actor-img-${actorFileName}`).src = avatarSrc;
-                                };
-                                img.src = imgSrc;
-                            } catch (e) {
-                                // Hata durumunda varsayılan avatar kullan
-                                imgSrc = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(actor) + '&background=E50914&color=fff&size=80';
-                            }
-                            
+                            candidates.push(`images/${actor.replace(/\s+/g, '_')}.jpg`);
+                            candidates.push(`images/${slug}.jpg`);
+                            candidates.push(`images/${actor.toLowerCase().replace(/\./g, '').replace(/\s+/g, '_')}.jpg`);
+                            candidates.push(`images/${actor.replace(/\s+/g, '_').replace(/-/g, '_')}.jpg`);
+                            const elementId = `actor-img-${slug}`;
+                            const avatarSrc = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(actor) + '&background=E50914&color=fff&size=150&bold=true&rounded=true';
+                            window.actorImageCandidates = window.actorImageCandidates || {};
+                            window.actorImageCandidates[elementId] = candidates.slice(1);
+                            const initialSrc = candidates[0];
                             return `
                             <div class="cast-item">
                                 <div class="cast-image-container">
-                                    <img id="actor-img-${actorFileName}" src="${imgSrc}" alt="${actor}" class="cast-avatar" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(actor)}&background=E50914&color=fff&size=150&bold=true&rounded=true'">
+                                    <img id="${elementId}" src="${initialSrc}" alt="${actor}" class="cast-avatar" onerror="window.onActorImgError && window.onActorImgError(event)" data-avatar="${avatarSrc}">
                                 </div>
                                 <p>${actor}</p>
                             </div>
@@ -393,6 +383,23 @@ const updateActiveNavLink = () => {
     homeLink.classList.toggle('active', currentView === 'home');
     favoritesLink.classList.toggle('active', currentView === 'favorites');
     feedbackLink.classList.toggle('active', currentView === 'feedback');
+};
+
+// Görsel yükleme hatasında sıradaki dosya adayına geç
+window.onActorImgError = function (event) {
+    const el = event.target;
+    window.actorImageCandidates = window.actorImageCandidates || {};
+    const list = window.actorImageCandidates[el.id] || [];
+    if (list.length > 0) {
+        const next = list.shift();
+        window.actorImageCandidates[el.id] = list;
+        el.src = next;
+    } else {
+        // Son çare olarak avatar kullan
+        el.onerror = null;
+        const fallback = el.getAttribute('data-avatar') || ('https://ui-avatars.com/api/?name=' + encodeURIComponent(el.alt) + '&background=E50914&color=fff&size=150&bold=true&rounded=true');
+        el.src = fallback;
+    }
 };
 
 // URL Hash'ini İşle
