@@ -115,13 +115,34 @@
                         <small class="error" id="fb-topic-error"></small>
                     </div>
                     <div class="form-group">
+                        <label>Memnuniyet</label>
+                        <div class="rating-stars" id="fb-rating" role="radiogroup" aria-label="Memnuniyet">
+                            <input type="radio" name="rating" id="rate-1" value="1" />
+                            <label for="rate-1" title="1">★</label>
+                            <input type="radio" name="rating" id="rate-2" value="2" />
+                            <label for="rate-2" title="2">★</label>
+                            <input type="radio" name="rating" id="rate-3" value="3" />
+                            <label for="rate-3" title="3">★</label>
+                            <input type="radio" name="rating" id="rate-4" value="4" />
+                            <label for="rate-4" title="4">★</label>
+                            <input type="radio" name="rating" id="rate-5" value="5" />
+                            <label for="rate-5" title="5">★</label>
+                        </div>
+                        <small class="error" id="fb-rating-error"></small>
+                    </div>
+                    <div class="form-group">
                         <label for="fb-message">Mesaj</label>
                         <textarea id="fb-message" name="message" placeholder="Mesajınızı yazın" required minlength="10" rows="5"></textarea>
+                        <small id="fb-message-count" class="status" aria-live="polite"></small>
                         <small class="error" id="fb-message-error"></small>
                     </div>
                     <button type="submit" class="btn">Gönder</button>
                     <p id="feedback-status" class="status" aria-live="polite"></p>
                 </form>
+
+                <h3>Gönderilenler</h3>
+                <div id="feedback-list" class="feedback-list"></div>
+                <button id="feedback-clear" class="btn" type="button">Tümünü Temizle</button>
             </div>
         </section>
     </main>

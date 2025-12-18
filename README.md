@@ -27,15 +27,41 @@ Bu proje, ISE-201 Web Teknolojileri dersi kapsamında geliştirilen bir Single P
 
 ## Bonus Özellikler
 
-- **CSS Animasyonları**: Sayfa geçişleri ve hover efektleri
-- **Erişilebilirlik (A11y)**: Ekran okuyucular için uygun etiketler ve ARIA özellikleri
-- **Performans Optimizasyonu**: Verimli DOM manipülasyonu
+Bu proje, zorunlu gereksinimlerin ötesinde aşağıdaki ekstra özelliklerle geliştirilmiştir:
+
+### ✅ Uygulanan Bonus Özellikler
+
+| Özellik | Açıklama |
+|---------|----------|
+| **Canlı Arama (Debounce)** | Arama kutusunda yazarken 300ms gecikmeli, performanslı filtreleme |
+| **Gelişmiş Sıralama** | Ada (A→Z/Z→A), Yıla (yeni→eski/eski→yeni), Puana (yüksek→düşük/düşük→yüksek) göre sıralama |
+| **Dinamik Sayfalama** | Sayfa başına 8/12/16/24 seçenekleri, Önceki/Sonraki kontrolleri |
+| **Görsel Yükleme Dayanıklılığı** | Aktör görselleri için çoklu dosya adı denemesi ve `onerror` fallback |
+| **CSS Animasyonları/Transitions** | Sayfa geçişleri, kart hover efektleri ve fade-in animasyonları |
+| **Erişilebilirlik (A11y)** | ARIA etiketleri, `sr-only` sınıfları, focus göstergeleri |
+| **Performans Optimizasyonu** | Verimli DOM manipülasyonu ve minimal re-render |
+| **YouTube Fragman Entegrasyonu** | Film detay sayfasında gömülü fragman oynatıcı |
+| **Memnuniyet Yıldız Sistemi** | Geri bildirim formunda interaktif 5 yıldızlı puanlama |
+
+### 📋 Potansiyel Gelecek Geliştirmeler
+
+Ödev dökümanında bonus puan kazandırabilecek diğer özellikler:
+
+- [ ] PWA (Progressive Web App) özellikleri (Service Worker, manifest.json)
+- [ ] Web Workers ile arka plan işlemleri
+- [ ] Dark/Light tema geçişi
 
 ## Kurulum ve Çalıştırma
 
 1. Projeyi bilgisayarınıza indirin
 2. Herhangi bir web sunucusu ile çalıştırın (örn. Live Server)
 3. Tarayıcınızda açın
+
+### Kullanım
+- Arama: Üstteki arama kutusuna yazdıkça sonuçlar 300ms debounce ile güncellenir. Enter ile anında arama yapılır.
+- Filtreler: Kategori ve yıl filtreleri birlikte çalışır.
+- Sıralama: "Sırala" menüsünden ada/yıl/puan kriterini seçin.
+- Sayfalama: "Sayfa başına" menüsünden liste boyutunu seçin; alt kısımdaki Önceki/Sonraki ile sayfalar arasında geçiş yapın.
 
 ## Depo ve Yayın
 
@@ -47,6 +73,10 @@ Bu proje, ISE-201 Web Teknolojileri dersi kapsamında geliştirilen bir Single P
 - Branch: `main` ve `/root` seçin (veya `docs` klasörünü kullanın)
 - Kaydedin; birkaç dakika sonra Pages linki aktif olur.
 - Eğer özel etki alanı kullanacaksanız, aynı sayfadan ekleyebilirsiniz.
+
+### Önemli Notlar
+- Dosya adları GitHub Pages’da büyük/küçük harfe duyarlıdır. Görseller için küçük harf ve tireli adlandırma önerilir (ör. `leonardo_dicaprio.jpg`).
+- `WEB TEKNOLOJİLERİ ÖDEVİ.txt` dosyası `.gitignore` altında tutulur ve depoya gönderilmez.
 
 ## Geri Bildirim Formu (Validasyon)
 

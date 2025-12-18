@@ -1,4 +1,17 @@
-// DOM Elementleri
+/* =============================================================================
+   SAÜFLIX - Film Kütüphanesi SPA (Single Page Application)
+   ISE-201 Web Teknolojileri Dersi Projesi
+   
+   Kullanılan Teknolojiler:
+   - Fetch API ile JSON veri çekme
+   - Async/Await asenkron programlama
+   - LocalStorage ile veri saklama
+   - SPA navigasyon (sayfa yenilemeden içerik değişimi)
+   - URL Hash yönetimi
+   - DOM manipülasyonu
+============================================================================= */
+
+// ==================== DOM ELEMENTLERI ====================
 const moviesGrid = document.getElementById('movies-grid');
 const favoritesGrid = document.getElementById('favorites-grid');
 const searchInput = document.getElementById('search-input');
@@ -22,19 +35,19 @@ const favoritesSection = document.getElementById('favorites-section');
 const feedbackSection = document.getElementById('feedback-section');
 const feedbackForm = document.getElementById('feedback-form');
 const feedbackStatus = document.getElementById('feedback-status');
-// Modal kullanılmıyor; fragman detay sayfasında gömülü oynatılıyor.
 
-// Uygulama Durumu
+// ==================== UYGULAMA DURUMU (STATE) ====================
 let movies = [];
-let favorites = JSON.parse(localStorage.getItem('favorites')) || [];
 let filteredMovies = [];
-let currentView = 'home'; // 'home', 'details', 'favorites'
-// 'feedback' görünümü eklendi
+let currentView = 'home';
 let currentPage = 1;
 let pageSize = 12;
 
-// Sayfa Yüklendiğinde
-document.addEventListener('DOMContentLoaded', async () => {
+// LocalStorage'dan favorileri yükle
+let favorites = JSON.parse(localStorage.getItem('favorites')) || [];
+
+// ==================== UYGULAMA BAŞLATMA ====================
+document.addEventListener('DOMContentLoaded', async function () {
     try {
         await loadMovies();
         setupYearFilter();
@@ -46,16 +59,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (pageSizeSelect) {
             pageSize = parseInt(pageSizeSelect.value, 10);
         }
-        // İlk renderi filtre/sıralama/sayfalama ile yap
         currentPage = 1;
         filterMovies();
     } catch (error) {
         console.error('Uygulama başlatılırken hata oluştu:', error);
-}
+    }
 });
 
-// Film Verilerini Yükle
-const loadMovies = async () => {
+// ==================== FETCH API - JSON VERİ ÇEKME ====================
+// fetch() ile movies.json dosyasından film verilerini çeker
+// async/await kullanarak asenkron işlem yapılır
+const loadMovies = async function () {
     try {
         const response = await fetch('./data/movies.json');
         if (!response.ok) {
@@ -63,7 +77,7 @@ const loadMovies = async () => {
         }
         const data = await response.json();
         movies = data.movies;
-        filteredMovies = [...movies];
+        filteredMovies = [].concat(movies);
         return movies;
     } catch (error) {
         console.error('Film verileri yüklenirken hata oluştu:', error);
@@ -71,10 +85,11 @@ const loadMovies = async () => {
     }
 };
 
-// Yıl Filtresini Ayarla
-const setupYearFilter = () => {
-    const years = [...new Set(movies.map(movie => movie.year))].sort((a, b) => b - a);
-    years.forEach(year => {
+// ==================== YIL FİLTRESİNİ AYARLA ====================
+const setupYearFilter = function () {
+    const yearsSet = new Set(movies.map(function (movie) { return movie.year; }));
+    const years = Array.from(yearsSet).sort(function (a, b) { return b - a; });
+    years.forEach(function (year) {
         const option = document.createElement('option');
         option.value = year;
         option.textContent = year;
@@ -82,296 +97,273 @@ const setupYearFilter = () => {
     });
 };
 
-// YouTube video ID çıkar
-const extractYouTubeId = (url) => {
+// ==================== YOUTUBE VIDEO ID ÇIKARMA ====================
+const extractYouTubeId = function (url) {
     try {
         const u = new URL(url);
-        // standart watch URL: ?v=ID
         const v = u.searchParams.get('v');
         if (v) return v;
-        // youtu.be/ID
         if (u.hostname === 'youtu.be') {
             return u.pathname.replace('/', '');
         }
-        // /embed/ID
         if (u.pathname.startsWith('/embed/')) {
             return u.pathname.split('/embed/')[1];
         }
     } catch (e) {
-        // geçersiz URL durumunda null döndür
     }
     return null;
 };
 
-// Modal tabanlı fragman gösterimi kaldırıldı.
-
-// Filmleri Listele
-const renderMovies = (moviesToRender) => {
+// ==================== DOM MANİPÜLASYONU - FİLMLERİ LİSTELE ====================
+// Film kartlarını dinamik olarak oluşturur ve DOM'a ekler
+const renderMovies = function (moviesToRender) {
     moviesGrid.innerHTML = '';
-    
+
     if (moviesToRender.length === 0) {
         moviesGrid.innerHTML = '<p class="no-results">Arama kriterlerinize uygun film bulunamadı.</p>';
         return;
     }
-    
-    moviesToRender.forEach(movie => {
-        const isFavorite = favorites.some(fav => fav.id === movie.id);
-        
+
+    moviesToRender.forEach(function (movie) {
+        const isFavorite = favorites.some(function (fav) { return fav.id === movie.id; });
+
         const movieCard = document.createElement('div');
         movieCard.className = 'movie-card fade-in';
-        movieCard.innerHTML = `
-            <img src="${movie.image}" alt="${movie.title}">
-            <button class="favorite-btn ${isFavorite ? 'active' : ''}" data-id="${movie.id}">
-                <i class="fas fa-heart"></i>
-                <span class="sr-only">${isFavorite ? 'Favorilerden çıkar' : 'Favorilere ekle'}</span>
-            </button>
-            <div class="movie-card-content">
-                <h3>${movie.title}</h3>
-                <p>${movie.year} | ${movie.category}</p>
-                <div class="rating">
-                    <i class="fas fa-star"></i> ${movie.rating}/10
-                </div>
-                <button class="btn details-btn" data-id="${movie.id}">Detaylar</button>
-            </div>
-        `;
-        
+
+        let cardHTML = '';
+        cardHTML += '<img src="' + movie.image + '" alt="' + movie.title + '">';
+        cardHTML += '<button class="favorite-btn ' + (isFavorite ? 'active' : '') + '" data-id="' + movie.id + '">';
+        cardHTML += '<i class="fas fa-heart"></i>';
+        cardHTML += '<span class="sr-only">' + (isFavorite ? 'Favorilerden çıkar' : 'Favorilere ekle') + '</span>';
+        cardHTML += '</button>';
+        cardHTML += '<div class="movie-card-content">';
+        cardHTML += '<h3>' + movie.title + '</h3>';
+        cardHTML += '<p>' + movie.year + ' | ' + movie.category + '</p>';
+        cardHTML += '<div class="rating">';
+        cardHTML += '<i class="fas fa-star"></i> ' + movie.rating + '/10';
+        cardHTML += '</div>';
+        cardHTML += '<button class="btn details-btn" data-id="' + movie.id + '">Detaylar</button>';
+        cardHTML += '</div>';
+
+        movieCard.innerHTML = cardHTML;
         moviesGrid.appendChild(movieCard);
     });
-    
-    // Detay butonlarına tıklama olayı ekle
-    document.querySelectorAll('.details-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
+
+    document.querySelectorAll('.details-btn').forEach(function (btn) {
+        btn.addEventListener('click', function (e) {
             const movieId = parseInt(e.target.dataset.id);
             showMovieDetails(movieId);
         });
     });
-    
-    // Kartlarda fragman butonu kaldırıldı (kullanıcı talebi)
-    
-    // Favori butonlarına tıklama olayı ekle
-    document.querySelectorAll('.favorite-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            // Kalp simgesine tıklandığında favorilere ekle
+
+    document.querySelectorAll('.favorite-btn').forEach(function (btn) {
+        btn.addEventListener('click', function (e) {
             if (e.target.tagName === 'I' || e.target.classList.contains('sr-only')) {
                 const movieId = parseInt(btn.dataset.id);
                 toggleFavorite(movieId);
-            } 
-            // Siyah kısma tıklandığında sadece etrafı kırmızı yap
-            else {
+            } else {
                 btn.classList.toggle('active');
             }
         });
     });
 };
 
-// Favorileri Listele
-const renderFavorites = () => {
+// ==================== FAVORİLERİ LİSTELE ====================
+const renderFavorites = function () {
     favoritesGrid.innerHTML = '';
-    
+
     if (favorites.length === 0) {
         favoritesGrid.innerHTML = '<p class="no-results">Henüz favori film eklemediniz.</p>';
         return;
     }
-    
-    favorites.forEach(movie => {
+
+    favorites.forEach(function (movie) {
         const movieCard = document.createElement('div');
         movieCard.className = 'movie-card fade-in';
-        movieCard.innerHTML = `
-            <img src="${movie.image}" alt="${movie.title}">
-            <button class="favorite-btn active" data-id="${movie.id}">
-                <i class="fas fa-heart"></i>
-                <span class="sr-only">Favorilerden çıkar</span>
-            </button>
-            <div class="movie-card-content">
-                <h3>${movie.title}</h3>
-                <p>${movie.year} | ${movie.category}</p>
-                <div class="rating">
-                    <i class="fas fa-star"></i> ${movie.rating}/10
-                </div>
-                <button class="btn details-btn" data-id="${movie.id}">Detaylar</button>
-            </div>
-        `;
-        
+
+        let cardHTML = '';
+        cardHTML += '<img src="' + movie.image + '" alt="' + movie.title + '">';
+        cardHTML += '<button class="favorite-btn active" data-id="' + movie.id + '">';
+        cardHTML += '<i class="fas fa-heart"></i>';
+        cardHTML += '<span class="sr-only">Favorilerden çıkar</span>';
+        cardHTML += '</button>';
+        cardHTML += '<div class="movie-card-content">';
+        cardHTML += '<h3>' + movie.title + '</h3>';
+        cardHTML += '<p>' + movie.year + ' | ' + movie.category + '</p>';
+        cardHTML += '<div class="rating">';
+        cardHTML += '<i class="fas fa-star"></i> ' + movie.rating + '/10';
+        cardHTML += '</div>';
+        cardHTML += '<button class="btn details-btn" data-id="' + movie.id + '">Detaylar</button>';
+        cardHTML += '</div>';
+
+        movieCard.innerHTML = cardHTML;
         favoritesGrid.appendChild(movieCard);
     });
-    
-    // Detay butonlarına tıklama olayı ekle
-    document.querySelectorAll('.details-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
+
+    document.querySelectorAll('.details-btn').forEach(function (btn) {
+        btn.addEventListener('click', function (e) {
             const movieId = parseInt(e.target.dataset.id);
             showMovieDetails(movieId);
         });
     });
-    
-    // Favori kartlarda fragman butonu kaldırıldı (kullanıcı talebi)
 
-    // Favori butonlarına tıklama olayı ekle
-    document.querySelectorAll('#favorites-grid .favorite-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
+    document.querySelectorAll('#favorites-grid .favorite-btn').forEach(function (btn) {
+        btn.addEventListener('click', function (e) {
             const movieId = parseInt(e.target.dataset.id);
             toggleFavorite(movieId);
-            renderFavorites(); // Favoriler güncellendiğinde yeniden render et
+            renderFavorites();
         });
     });
 };
 
-// Film Detaylarını Göster
-const showMovieDetails = (movieId) => {
-    const movie = movies.find(m => m.id === movieId);
+// ==================== FİLM DETAYLARINI GÖSTER ====================
+const showMovieDetails = function (movieId) {
+    const movie = movies.find(function (m) { return m.id === movieId; });
     if (!movie) return;
-    
-    window.location.hash = `movie-${movieId}`;
-    const videoId = movie && movie.trailer ? extractYouTubeId(movie.trailer) : null;
-    
-    detailContent.innerHTML = `
-        <div class="detail-content">
-            <div class="detail-image">
-                <img src="${movie.image}" alt="${movie.title}">
-                ${videoId ? `
-                <div class="trailer-section" style="margin-top: 1rem;">
-                    <h3 style="margin-bottom: 0.5rem;">Fragman</h3>
-                    <div class="trailer-iframe-container">
-                        <iframe src="https://www.youtube.com/embed/${videoId}?modestbranding=1&rel=0&iv_load_policy=3&playsinline=1"
-                                title="${movie.title} Fragman"
-                                allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                allowfullscreen></iframe>
-                    </div>
-                </div>
-                ` : ''}
-            </div>
-            <div class="detail-info">
-                <h2>${movie.title}</h2>
-                <div class="meta">
-                    <span><i class="fas fa-calendar"></i> ${movie.year}</span>
-                    <span><i class="fas fa-film"></i> ${movie.category}</span>
-                    <span><i class="fas fa-user"></i> ${movie.director}</span>
-                </div>
-                <div class="rating">
-                    <i class="fas fa-star"></i> ${movie.rating}/10
-                </div>
-                <div class="description">
-                    <p>${movie.description}</p>
-                </div>
-                <div class="cast">
-                    <h3>Oyuncular</h3>
-                    <div class="cast-list">
-                        ${movie.cast.map(actor => {
-                            const slug = actor.toLowerCase().replace(/\./g, '').replace(/\s+/g, '_');
-                            const exceptions = {
-                                'samuel l jackson': 'Samuel_L_Jackson.jpg',
-                                'robert downey jr': 'Robert_Downey_Jr..jpg',
-                                'tj miller': 'T.J._Miller.jpg'
-                            };
-                            const key = actor.toLowerCase().replace(/\./g, '').replace(/\s+/g, ' ').trim();
-                            const candidates = [];
-                            if (exceptions[key]) {
-                                candidates.push(`images/${exceptions[key]}`);
-                            }
-                            candidates.push(`images/${actor.replace(/\s+/g, '_')}.jpg`);
-                            candidates.push(`images/${slug}.jpg`);
-                            candidates.push(`images/${actor.toLowerCase().replace(/\./g, '').replace(/\s+/g, '_')}.jpg`);
-                            candidates.push(`images/${actor.replace(/\s+/g, '_').replace(/-/g, '_')}.jpg`);
-                            const elementId = `actor-img-${slug}`;
-                            const avatarSrc = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(actor) + '&background=E50914&color=fff&size=150&bold=true&rounded=true';
-                            window.actorImageCandidates = window.actorImageCandidates || {};
-                            window.actorImageCandidates[elementId] = candidates.slice(1);
-                            const initialSrc = candidates[0];
-                            return `
-                            <div class="cast-item">
-                                <div class="cast-image-container">
-                                    <img id="${elementId}" src="${initialSrc}" alt="${actor}" class="cast-avatar" onerror="window.onActorImgError && window.onActorImgError(event)" data-avatar="${avatarSrc}">
-                                </div>
-                                <p>${actor}</p>
-                            </div>
-                            `;
-                        }).join('')}
-                    </div>
-                </div>
-                
-                <button class="btn favorite-detail-btn ${favorites.some(fav => fav.id === movie.id) ? 'active' : ''}" data-id="${movie.id}">
-                    <i class="fas fa-heart"></i> ${favorites.some(fav => fav.id === movie.id) ? 'Favorilerden Çıkar' : 'Favorilere Ekle'}
-                </button>
-            </div>
-        </div>
-    `;
-    
-    // Artık fragman inline oynatılıyor; ekstra olay gerekmiyor
 
-    // Detay sayfasındaki favori butonuna tıklama olayı ekle
-    document.querySelector('.favorite-detail-btn').addEventListener('click', (e) => {
+    window.location.hash = 'movie-' + movieId;
+    const videoId = movie && movie.trailer ? extractYouTubeId(movie.trailer) : null;
+
+    let detailHTML = '';
+    detailHTML += '<div class="detail-content">';
+    detailHTML += '<div class="detail-image">';
+    detailHTML += '<img src="' + movie.image + '" alt="' + movie.title + '">';
+
+    if (videoId) {
+        detailHTML += '<div class="trailer-section" style="margin-top: 1rem;">';
+        detailHTML += '<h3 style="margin-bottom: 0.5rem;">Fragman</h3>';
+        detailHTML += '<div class="trailer-iframe-container">';
+        detailHTML += '<iframe src="https://www.youtube.com/embed/' + videoId + '?modestbranding=1&rel=0&iv_load_policy=3&playsinline=1"';
+        detailHTML += ' title="' + movie.title + ' Fragman"';
+        detailHTML += ' allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"';
+        detailHTML += ' allowfullscreen></iframe>';
+        detailHTML += '</div>';
+        detailHTML += '</div>';
+    }
+
+    detailHTML += '</div>';
+    detailHTML += '<div class="detail-info">';
+    detailHTML += '<h2>' + movie.title + '</h2>';
+    detailHTML += '<div class="meta">';
+    detailHTML += '<span><i class="fas fa-calendar"></i> ' + movie.year + '</span>';
+    detailHTML += '<span><i class="fas fa-film"></i> ' + movie.category + '</span>';
+    detailHTML += '<span><i class="fas fa-user"></i> ' + movie.director + '</span>';
+    detailHTML += '</div>';
+    detailHTML += '<div class="rating">';
+    detailHTML += '<i class="fas fa-star"></i> ' + movie.rating + '/10';
+    detailHTML += '</div>';
+    detailHTML += '<div class="description">';
+    detailHTML += '<p>' + movie.description + '</p>';
+    detailHTML += '</div>';
+    detailHTML += '<div class="cast">';
+    detailHTML += '<h3>Oyuncular</h3>';
+    detailHTML += '<div class="cast-list">';
+
+    movie.cast.forEach(function (actor) {
+        const slug = actor.toLowerCase().replace(/\./g, '').replace(/\s+/g, '_');
+        const exceptions = {
+            'samuel l jackson': 'Samuel_L_Jackson.jpg',
+            'robert downey jr': 'Robert_Downey_Jr..jpg',
+            'tj miller': 'T.J._Miller.jpg'
+        };
+        const key = actor.toLowerCase().replace(/\./g, '').replace(/\s+/g, ' ').trim();
+        const candidates = [];
+        if (exceptions[key]) {
+            candidates.push('images/' + exceptions[key]);
+        }
+        candidates.push('images/' + actor.replace(/\s+/g, '_') + '.jpg');
+        candidates.push('images/' + slug + '.jpg');
+        candidates.push('images/' + actor.toLowerCase().replace(/\./g, '').replace(/\s+/g, '_') + '.jpg');
+        candidates.push('images/' + actor.replace(/\s+/g, '_').replace(/-/g, '_') + '.jpg');
+        const elementId = 'actor-img-' + slug;
+        const avatarSrc = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(actor) + '&background=E50914&color=fff&size=150&bold=true&rounded=true';
+        window.actorImageCandidates = window.actorImageCandidates || {};
+        window.actorImageCandidates[elementId] = candidates.slice(1);
+        const initialSrc = candidates[0];
+
+        detailHTML += '<div class="cast-item">';
+        detailHTML += '<div class="cast-image-container">';
+        detailHTML += '<img id="' + elementId + '" src="' + initialSrc + '" alt="' + actor + '" class="cast-avatar" onerror="window.onActorImgError && window.onActorImgError(event)" data-avatar="' + avatarSrc + '">';
+        detailHTML += '</div>';
+        detailHTML += '<p>' + actor + '</p>';
+        detailHTML += '</div>';
+    });
+
+    detailHTML += '</div>';
+    detailHTML += '</div>';
+
+    const isFavorite = favorites.some(function (fav) { return fav.id === movie.id; });
+    detailHTML += '<button class="btn favorite-detail-btn ' + (isFavorite ? 'active' : '') + '" data-id="' + movie.id + '">';
+    detailHTML += '<i class="fas fa-heart"></i> ' + (isFavorite ? 'Favorilerden Çıkar' : 'Favorilere Ekle');
+    detailHTML += '</button>';
+    detailHTML += '</div>';
+    detailHTML += '</div>';
+
+    detailContent.innerHTML = detailHTML;
+
+    document.querySelector('.favorite-detail-btn').addEventListener('click', function (e) {
         const movieId = parseInt(e.target.dataset.id);
         toggleFavorite(movieId);
-        
-        // Buton metnini güncelle
-        const isFavorite = favorites.some(fav => fav.id === movieId);
-        e.target.innerHTML = `<i class="fas fa-heart"></i> ${isFavorite ? 'Favorilerden Çıkar' : 'Favorilere Ekle'}`;
+        const isFavorite = favorites.some(function (fav) { return fav.id === movieId; });
+        e.target.innerHTML = '<i class="fas fa-heart"></i> ' + (isFavorite ? 'Favorilerden Çıkar' : 'Favorilere Ekle');
         e.target.classList.toggle('active', isFavorite);
     });
-    
-    // Görünümü değiştir
+
     contentSection.classList.add('hidden');
     favoritesSection.classList.add('hidden');
     movieDetails.classList.remove('hidden');
     currentView = 'details';
-    
-    // Aktif menü öğesini güncelle
     updateActiveNavLink();
 };
 
-// Favorilere Ekle/Çıkar
-const toggleFavorite = (movieId) => {
-    const movie = movies.find(m => m.id === movieId);
+// ==================== LOCALSTORAGE - FAVORİ EKLEME/ÇIKARMA ====================
+// Favorileri localStorage'a kaydeder, sayfa yenilense bile veriler kalır
+const toggleFavorite = function (movieId) {
+    const movie = movies.find(function (m) { return m.id === movieId; });
     if (!movie) return;
-    
-    const isFavorite = favorites.some(fav => fav.id === movieId);
-    
+
+    const isFavorite = favorites.some(function (fav) { return fav.id === movieId; });
+
     if (isFavorite) {
-        favorites = favorites.filter(fav => fav.id !== movieId);
+        favorites = favorites.filter(function (fav) { return fav.id !== movieId; });
     } else {
         favorites.push(movie);
     }
-    
-    // LocalStorage'a kaydet
+
     localStorage.setItem('favorites', JSON.stringify(favorites));
-    
-    // Favori butonlarını güncelle
     updateFavoriteButtons();
-    
-    // Eğer favoriler görünümündeyse, listeyi güncelle
+
     if (currentView === 'favorites') {
         renderFavorites();
     }
 };
 
-// Favori Butonlarını Güncelle
-const updateFavoriteButtons = () => {
-    document.querySelectorAll('.favorite-btn').forEach(btn => {
+// ==================== FAVORİ BUTONLARINI GÜNCELLE ====================
+const updateFavoriteButtons = function () {
+    document.querySelectorAll('.favorite-btn').forEach(function (btn) {
         const movieId = parseInt(btn.dataset.id);
-        const isFavorite = favorites.some(fav => fav.id === movieId);
-        
+        const isFavorite = favorites.some(function (fav) { return fav.id === movieId; });
         btn.classList.toggle('active', isFavorite);
         btn.querySelector('.sr-only').textContent = isFavorite ? 'Favorilerden çıkar' : 'Favorilere ekle';
     });
 };
 
-// Filmleri Filtrele
-const filterMovies = () => {
+// ==================== FİLTRELEME VE SIRALAMA ====================
+const filterMovies = function () {
     const searchTerm = searchInput.value.toLowerCase().trim();
     const selectedCategory = categoryFilter.value;
     const selectedYear = yearFilter.value;
     const sortValue = sortSelect ? sortSelect.value : '';
     pageSize = pageSizeSelect ? parseInt(pageSizeSelect.value, 10) : pageSize;
-    
-    filteredMovies = movies.filter(movie => {
+
+    filteredMovies = movies.filter(function (movie) {
         const matchesSearch = movie.title.toLowerCase().includes(searchTerm);
         const matchesCategory = selectedCategory === '' || movie.category === selectedCategory;
         const matchesYear = selectedYear === '' || movie.year.toString() === selectedYear;
-        
         return matchesSearch && matchesCategory && matchesYear;
     });
-    // Sıralama uygula
+
     const sorted = applySort(filteredMovies, sortValue);
-    // Sayfalama uygula
     const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
     if (currentPage > totalPages) currentPage = totalPages;
     const start = (currentPage - 1) * pageSize;
@@ -381,8 +373,11 @@ const filterMovies = () => {
     updatePaginationControls(currentPage, totalPages);
 };
 
-// Ana Sayfayı Göster
-const showHomePage = () => {
+// ==================== SPA NAVİGASYON - SAYFA YENİLEMEDEN İÇERİK DEĞİŞİMİ ====================
+// classList.add('hidden') ile gizle, classList.remove('hidden') ile göster
+// window.location.hash ile URL güncellenir ama sayfa yenilenmez
+
+const showHomePage = function () {
     window.location.hash = 'home';
     contentSection.classList.remove('hidden');
     movieDetails.classList.add('hidden');
@@ -394,8 +389,7 @@ const showHomePage = () => {
     filterMovies();
 };
 
-// Favoriler Sayfasını Göster
-const showFavoritesPage = () => {
+const showFavoritesPage = function () {
     window.location.hash = 'favorites';
     contentSection.classList.add('hidden');
     movieDetails.classList.add('hidden');
@@ -406,14 +400,13 @@ const showFavoritesPage = () => {
     updateActiveNavLink();
 };
 
-// Aktif Menü Öğesini Güncelle
-const updateActiveNavLink = () => {
+const updateActiveNavLink = function () {
     homeLink.classList.toggle('active', currentView === 'home');
     favoritesLink.classList.toggle('active', currentView === 'favorites');
     feedbackLink.classList.toggle('active', currentView === 'feedback');
 };
 
-// Görsel yükleme hatasında sıradaki dosya adayına geç
+// ==================== GÖRSEL YÜKLEME HATASI YÖNETİMİ ====================
 window.onActorImgError = function (event) {
     const el = event.target;
     window.actorImageCandidates = window.actorImageCandidates || {};
@@ -423,17 +416,18 @@ window.onActorImgError = function (event) {
         window.actorImageCandidates[el.id] = list;
         el.src = next;
     } else {
-        // Son çare olarak avatar kullan
         el.onerror = null;
         const fallback = el.getAttribute('data-avatar') || ('https://ui-avatars.com/api/?name=' + encodeURIComponent(el.alt) + '&background=E50914&color=fff&size=150&bold=true&rounded=true');
         el.src = fallback;
     }
 };
 
-// URL Hash'ini İşle
-const handleUrlHash = () => {
+// ==================== URL HASH YÖNETİMİ - SPA ROUTING ====================
+// URL'deki # değerine göre doğru sayfayı gösterir
+// Örnek: index.html#favorites -> Favoriler sayfası
+const handleUrlHash = function () {
     const hash = window.location.hash.substring(1);
-    
+
     if (hash.startsWith('movie-')) {
         const movieId = parseInt(hash.split('-')[1]);
         showMovieDetails(movieId);
@@ -446,65 +440,70 @@ const handleUrlHash = () => {
     }
 };
 
-// Olay Dinleyicilerini Ayarla
-const setupEventListeners = () => {
-    // Arama ve filtreleme
+// ==================== OLAY DİNLEYİCİLERİ (EVENT LISTENERS) ====================
+// addEventListener ile kullanıcı etkileşimlerini dinler
+// e.preventDefault() ile sayfa yenilenmesi engellenir (SPA için gerekli)
+const setupEventListeners = function () {
     searchButton.addEventListener('click', filterMovies);
-    // Debounce'lu canlı arama
-    const debounce = (fn, delay = 300) => {
+
+    // Debounce: Performans için 300ms bekler, her tuşta arama yapmaz
+    const debounce = function (fn, delay) {
+        if (delay === undefined) delay = 300;
         let t;
-        return (...args) => {
+        return function () {
+            const args = arguments;
+            const context = this;
             clearTimeout(t);
-            t = setTimeout(() => fn(...args), delay);
+            t = setTimeout(function () { fn.apply(context, args); }, delay);
         };
     };
-    const debouncedFilter = debounce(() => { currentPage = 1; filterMovies(); }, 300);
+
+    const debouncedFilter = debounce(function () { currentPage = 1; filterMovies(); }, 300);
     searchInput.addEventListener('input', debouncedFilter);
-    searchInput.addEventListener('keyup', (e) => {
+
+    searchInput.addEventListener('keyup', function (e) {
         if (e.key === 'Enter') {
             currentPage = 1;
             filterMovies();
         }
     });
+
     categoryFilter.addEventListener('change', filterMovies);
     yearFilter.addEventListener('change', filterMovies);
-    if (sortSelect) sortSelect.addEventListener('change', () => { currentPage = 1; filterMovies(); });
-    if (pageSizeSelect) pageSizeSelect.addEventListener('change', () => { currentPage = 1; filterMovies(); });
-    if (prevPageBtn) prevPageBtn.addEventListener('click', () => { if (currentPage > 1) { currentPage--; filterMovies(); } });
-    if (nextPageBtn) nextPageBtn.addEventListener('click', () => { currentPage++; filterMovies(); });
-    
-    // Navigasyon
-    homeLink.addEventListener('click', (e) => {
+    if (sortSelect) sortSelect.addEventListener('change', function () { currentPage = 1; filterMovies(); });
+    if (pageSizeSelect) pageSizeSelect.addEventListener('change', function () { currentPage = 1; filterMovies(); });
+    if (prevPageBtn) prevPageBtn.addEventListener('click', function () { if (currentPage > 1) { currentPage--; filterMovies(); } });
+    if (nextPageBtn) nextPageBtn.addEventListener('click', function () { currentPage++; filterMovies(); });
+
+    homeLink.addEventListener('click', function (e) {
         e.preventDefault();
         showHomePage();
     });
-    
-    favoritesLink.addEventListener('click', (e) => {
+
+    favoritesLink.addEventListener('click', function (e) {
         e.preventDefault();
         showFavoritesPage();
     });
-    
-    feedbackLink.addEventListener('click', (e) => {
+
+    feedbackLink.addEventListener('click', function (e) {
         e.preventDefault();
         showFeedbackPage();
     });
-    
-    backButton.addEventListener('click', () => {
+
+    backButton.addEventListener('click', function () {
         if (currentView === 'favorites') {
             showFavoritesPage();
         } else {
             showHomePage();
         }
     });
-    
-    // URL hash değişikliklerini dinle
-    window.addEventListener('hashchange', handleUrlHash);
 
-    // Modal kapatma dinleyicileri kaldırıldı.
+    window.addEventListener('hashchange', handleUrlHash);
 };
 
-// Geri Bildirim Formu Doğrulama ve Submit
-const setupFeedbackForm = () => {
+// ==================== GERİ BİLDİRİM FORMU - FORM VALİDASYONU ====================
+// HTML5 validasyonları ve JavaScript ile ek doğrulamalar
+const setupFeedbackForm = function () {
     if (!feedbackForm) return;
 
     const nameInput = document.getElementById('fb-name');
@@ -522,7 +521,7 @@ const setupFeedbackForm = () => {
     const feedbackClearBtn = document.getElementById('feedback-clear');
     let feedbacks = JSON.parse(localStorage.getItem('feedbacks') || '[]');
 
-    const validateName = () => {
+    const validateName = function () {
         const pattern = /^[A-Za-zÇçĞğİıÖöŞşÜü\s]{2,}$/;
         if (!nameInput.value.trim()) {
             nameError.textContent = 'Ad soyad zorunlu.';
@@ -535,7 +534,7 @@ const setupFeedbackForm = () => {
         return true;
     };
 
-    const validateEmail = () => {
+    const validateEmail = function () {
         if (!emailInput.value.trim()) {
             emailError.textContent = 'E-posta zorunlu.';
             return false;
@@ -547,7 +546,7 @@ const setupFeedbackForm = () => {
         return true;
     };
 
-    const validateTopic = () => {
+    const validateTopic = function () {
         if (!topicSelect.value) {
             topicError.textContent = 'Bir konu seçin.';
             return false;
@@ -556,7 +555,7 @@ const setupFeedbackForm = () => {
         return true;
     };
 
-    const validateMessage = () => {
+    const validateMessage = function () {
         if (!messageInput.value.trim()) {
             messageError.textContent = 'Mesaj zorunlu.';
             return false;
@@ -568,27 +567,24 @@ const setupFeedbackForm = () => {
         return true;
     };
 
-    [nameInput, emailInput, topicSelect, messageInput].forEach(el => {
-        el.addEventListener('input', () => {
-            switch (el) {
-                case nameInput: validateName(); break;
-                case emailInput: validateEmail(); break;
-                case topicSelect: validateTopic(); break;
-                case messageInput: validateMessage(); break;
-            }
+    [nameInput, emailInput, topicSelect, messageInput].forEach(function (el) {
+        el.addEventListener('input', function () {
+            if (el === nameInput) { validateName(); }
+            else if (el === emailInput) { validateEmail(); }
+            else if (el === topicSelect) { validateTopic(); }
+            else if (el === messageInput) { validateMessage(); }
         });
     });
-    // Mesaj karakter sayacı
-    const updateMessageCount = () => {
+
+    const updateMessageCount = function () {
         const len = messageInput.value.trim().length;
-        if (messageCount) messageCount.textContent = `${len} / min 10`;
+        if (messageCount) messageCount.textContent = len + ' / min 10';
     };
     messageInput.addEventListener('input', updateMessageCount);
     updateMessageCount();
 
-    // Rating doğrulama ve yıldız görselleştirme
-    const validateRating = () => {
-        const selected = ratingInputs.find(r => r.checked);
+    const validateRating = function () {
+        const selected = ratingInputs.find(function (r) { return r.checked; });
         if (!selected) {
             if (ratingError) ratingError.textContent = 'Bir memnuniyet puanı seçin.';
             return false;
@@ -596,36 +592,42 @@ const setupFeedbackForm = () => {
         if (ratingError) ratingError.textContent = '';
         return true;
     };
-    const updateStars = () => {
-        const selectedVal = (ratingInputs.find(r => r.checked)?.value) || '0';
+
+    const updateStars = function () {
+        const checkedInput = ratingInputs.find(function (r) { return r.checked; });
+        const selectedVal = checkedInput ? checkedInput.value : '0';
         const valNum = parseInt(selectedVal, 10);
-        document.querySelectorAll('#fb-rating label').forEach((lbl, idx) => {
+        document.querySelectorAll('#fb-rating label').forEach(function (lbl, idx) {
             lbl.classList.toggle('active', idx < valNum);
         });
     };
-    ratingInputs.forEach(r => r.addEventListener('change', () => { validateRating(); updateStars(); }));
+
+    ratingInputs.forEach(function (r) {
+        r.addEventListener('change', function () { validateRating(); updateStars(); });
+    });
     updateStars();
 
-    // Gönderi listesini render et
-    const renderFeedbacks = () => {
+    const renderFeedbacks = function () {
         if (!feedbackList) return;
         feedbackList.innerHTML = '';
         if (!Array.isArray(feedbacks) || feedbacks.length === 0) {
             feedbackList.innerHTML = '<p class="no-results">Henüz gönderi yok.</p>';
             return;
         }
-        feedbacks.slice().reverse().forEach((fb, idx) => {
+        feedbacks.slice().reverse().forEach(function (fb, idx) {
             const item = document.createElement('div');
             item.className = 'feedback-item';
-            item.innerHTML = `
-                <div class="meta">${fb.name} • ${fb.email} • ${fb.topic} • ⭐ ${fb.rating} • ${new Date(fb.createdAt || fb.date).toLocaleString('tr-TR')}</div>
-                <p>${fb.message}</p>
-                <button class="btn btn-sm" data-index="${feedbacks.length - 1 - idx}">Sil</button>
-            `;
+
+            let itemHTML = '';
+            itemHTML += '<div class="meta">' + fb.name + ' • ' + fb.email + ' • ' + fb.topic + ' • ⭐ ' + fb.rating + ' • ' + new Date(fb.createdAt || fb.date).toLocaleString('tr-TR') + '</div>';
+            itemHTML += '<p>' + fb.message + '</p>';
+            itemHTML += '<button class="btn btn-sm" data-index="' + (feedbacks.length - 1 - idx) + '">Sil</button>';
+
+            item.innerHTML = itemHTML;
             feedbackList.appendChild(item);
         });
-        feedbackList.querySelectorAll('button[data-index]').forEach(btn => {
-            btn.addEventListener('click', (e) => {
+        feedbackList.querySelectorAll('button[data-index]').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
                 const i = parseInt(e.target.getAttribute('data-index'), 10);
                 feedbacks.splice(i, 1);
                 localStorage.setItem('feedbacks', JSON.stringify(feedbacks));
@@ -636,7 +638,7 @@ const setupFeedbackForm = () => {
     renderFeedbacks();
 
     if (feedbackClearBtn) {
-        feedbackClearBtn.addEventListener('click', () => {
+        feedbackClearBtn.addEventListener('click', function () {
             feedbacks = [];
             localStorage.setItem('feedbacks', JSON.stringify(feedbacks));
             renderFeedbacks();
@@ -644,7 +646,7 @@ const setupFeedbackForm = () => {
         });
     }
 
-    feedbackForm.addEventListener('submit', (e) => {
+    feedbackForm.addEventListener('submit', function (e) {
         e.preventDefault();
         const v1 = validateName();
         const v2 = validateEmail();
@@ -656,13 +658,14 @@ const setupFeedbackForm = () => {
             return;
         }
 
+        const checkedRating = ratingInputs.find(function (r) { return r.checked; });
         const payload = {
             name: nameInput.value.trim(),
             email: emailInput.value.trim(),
             topic: topicSelect.value,
             message: messageInput.value.trim(),
-            rating: parseInt(ratingInputs.find(r => r.checked)?.value || '0', 10),
-            createdAt: new Date().toISOString(),
+            rating: parseInt(checkedRating ? checkedRating.value : '0', 10),
+            createdAt: new Date().toISOString()
         };
 
         feedbacks.push(payload);
@@ -674,8 +677,9 @@ const setupFeedbackForm = () => {
         renderFeedbacks();
     });
 };
-// Geri Bildirim Sayfasını Göster
-const showFeedbackPage = () => {
+
+// ==================== GERİ BİLDİRİM SAYFASI ====================
+const showFeedbackPage = function () {
     window.location.hash = 'feedback';
     contentSection.classList.add('hidden');
     movieDetails.classList.add('hidden');
@@ -685,31 +689,31 @@ const showFeedbackPage = () => {
     updateActiveNavLink();
 };
 
-// Sıralama uygulayıcı
-const applySort = (list, sortValue) => {
-    const arr = [...list];
+// ==================== SIRALAMA ====================
+const applySort = function (list, sortValue) {
+    const arr = [].concat(list);
     switch (sortValue) {
         case 'title-asc':
-            return arr.sort((a, b) => a.title.localeCompare(b.title));
+            return arr.sort(function (a, b) { return a.title.localeCompare(b.title); });
         case 'title-desc':
-            return arr.sort((a, b) => b.title.localeCompare(a.title));
+            return arr.sort(function (a, b) { return b.title.localeCompare(a.title); });
         case 'year-asc':
-            return arr.sort((a, b) => a.year - b.year);
+            return arr.sort(function (a, b) { return a.year - b.year; });
         case 'year-desc':
-            return arr.sort((a, b) => b.year - a.year);
+            return arr.sort(function (a, b) { return b.year - a.year; });
         case 'rating-asc':
-            return arr.sort((a, b) => a.rating - b.rating);
+            return arr.sort(function (a, b) { return a.rating - b.rating; });
         case 'rating-desc':
-            return arr.sort((a, b) => b.rating - a.rating);
+            return arr.sort(function (a, b) { return b.rating - a.rating; });
         default:
             return arr;
     }
 };
 
-// Sayfalama kontrol güncelleme
-const updatePaginationControls = (page, totalPages) => {
+// ==================== SAYFALAMA KONTROLÜ ====================
+const updatePaginationControls = function (page, totalPages) {
     if (!paginationEl) return;
     prevPageBtn.disabled = page <= 1;
     nextPageBtn.disabled = page >= totalPages;
-    pageInfoEl.textContent = `${page} / ${totalPages}`;
+    pageInfoEl.textContent = page + ' / ' + totalPages;
 };
